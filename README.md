@@ -14,6 +14,7 @@ CR type:https://types.cloudbees.com/resource/services-platform/resource
 For Services Platform subscription:
 
 CR URL: https://services-platform.cloudbees.com/api/services/subscriptions/{service}/{account}
+
 CR type:https://types.cloudbees.com/resource/services-platform/subscription
 
 Using the code
@@ -24,12 +25,13 @@ To use this library, add the following dependency to your Maven POM:
      <groupId>com.cloudbees.event</groupId>
      <artifactId>cloudbees-event-api</artifactId>
      <version>1.0</version>
-   </dependency>
+    </dependency>
 
 
 Authentication
 --------------
 Event API require an OAuth token with following scopes:
+
     * To publish an event https://api.cloudbees.com/services/api/events/write
     * To read/Query an event https://api.cloudbees.com/services/api/events/read
 
@@ -43,7 +45,7 @@ Usage
 
 Publish Event
 -------------
-The Target URL must identify the cloud resource. The cloud resource type is optional, the default value is https://types.cloudbees.com/resource.
+The Target URL must identify the cloud resource. 
 
         // Publish event events for an application on RUN@cloud as cloud resource
         Event.Target target = new Event.Target("https://services-platform.cloudbees.com/api/services/resources/cb-app/acme/helloworld",
