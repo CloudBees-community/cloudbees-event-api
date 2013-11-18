@@ -51,6 +51,10 @@ The Target URL must identify the cloud resource. The cloud resource type is opti
 
         Event eventReq = new Event(target, "info");
 
+        Event.EventData eventData = new Event.EventData.Builder("Application helloworld deployed")
+                        .description("Application helloworld event")
+                        .url(new URL("https://run.cloudbees.com/a/acme"))
+                        .build();
 
         eventReq.setEvent(eventData);
 
