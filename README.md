@@ -23,7 +23,7 @@ To use this library, add the following dependency to your Maven POM:
     <dependency>
      <groupId>com.cloudbees.event</groupId>
      <artifactId>cloudbees-event-api</artifactId>
-     <version>1.0-SNAPSHOT</version>
+     <version>1.0</version>
    </dependency>
 
 
