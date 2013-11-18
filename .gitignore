@@ -1,0 +1,12 @@
+#Ignore all dot files
+.*
+*.log
+#except .gitignore
+!.gitignore
+*.iml
+*.ipr
+*.iws
+target/*
+**/target/*
+cloudbees-web.xml
+*~
