@@ -87,7 +87,7 @@
 
     <scm>
         <connection>scm:git:git://github.com/CloudBees-community/cloudbees-event-api.git</connection>
-        <developerConnection>git@github.com:CloudBees-community/cloudbees-event-api.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:CloudBees-community/cloudbees-event-api.git</developerConnection>
         <url>http://github.com/CloudBees-community/cloudbees-event-api</url>
     </scm>
 </project>
