@@ -67,6 +67,7 @@ Here we are using a different Target constructor providing service, account name
         Event.Target target = new Event.Target("acme", "cb-app", "helloworld");
 
  * HTTP Request
+ 
         > POST https://services-platform.cloudbees.com/api/events/
         > Content-Type: application/json
         > Authorization: Bearer XXXXXXXXXXXX==
@@ -82,6 +83,7 @@ Here we are using a different Target constructor providing service, account name
           }
         }
  * HTTP Response
+ 
         < 201
         < Date: Sun, 17 Nov 2013 20:33:13 GMT
         < Content-Length: 0
@@ -96,10 +98,12 @@ Read an event
 
 
   * HTTP Request
+  
         > GET https://services-platform.cloudbees.com/api/events/4e0fd0b48f744959b043dc11bd78f412
         > Authorization: Bearer XXXXXXXXXXXX==
 
   * HTTP Response
+ 
         < 200
         < Content-Type: application/json
         <
@@ -125,10 +129,12 @@ Delete event
         eventApi.delete(eventUrl);
 
   * HTTP Request
+ 
         > DELETE http://services-dev.apps.cloudbees.com/api/events/4e0fd0b48f744959b043dc11bd78f412
         > Authorization: Bearer XXXXXXXXXXXX==
 
   * HTTP Response
+ 
         < 200
         < Date: Sun, 17 Nov 2013 20:33:13 GMT
         < Content-Length: 0
@@ -141,6 +147,7 @@ Query events
                 .build();
 
   * HTTP Request
+  
         > GET https://services-platform.cloudbees.com/api/events/?cloud_resource=https://services-platform.cloudbees.com/api/services/resources/cb-app/cloudbees/helloworld
         > Authorization: Bearer XXXXXXXXXXXX==
 
@@ -152,6 +159,7 @@ Query events
                 .build();
 
   * HTTP Request
+  
         > GET http://services-dev.apps.cloudbees.com/api/events/?account=cloudbees&service=cb-app&resource=helloworld
         > Authorization: Bearer XXXXXXXXXXXX==
 
@@ -160,6 +168,7 @@ Query events
 
 
   * HTTP Response
+  
         < 200
         < Content-Type: application/json
 
