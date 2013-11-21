@@ -51,6 +51,10 @@ public class EventApi {
      * https://api.cloudbees.com/services/api/events/read - For reading/querying events
      * https://api.cloudbees.com/services/api/events/write - For publishing events
      *
+     * CloudResource READ capability scope. For example for a git CR, https://acme.org/testdb, the token must
+     * be granted with OAuth scope: crs://acme.org/!https://types.cloudbees.com/resource/read
+     *
+     *
      * @param accessToken valid access token with
      *
      * @throws IOException

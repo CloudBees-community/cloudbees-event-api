@@ -24,7 +24,7 @@ To use this library, add the following dependency to your Maven POM:
     <dependency>
      <groupId>com.cloudbees.event</groupId>
      <artifactId>cloudbees-event-api</artifactId>
-     <version>1.0</version>
+     <version>1.1-SNAPSHOT</version>
     </dependency>
 
 
@@ -34,21 +34,32 @@ Event API require an OAuth token with following scopes:
 
     * To publish an event https://api.cloudbees.com/services/api/events/write
     * To read/Query an event https://api.cloudbees.com/services/api/events/read
-
+    * CloudResource READ capability scope. For example for a git CR, https://acme.org/testdb, the token must
+      be granted with OAuth scope: crs://acme.org/!https://types.cloudbees.com/resource/read
 
 Usage
 -----
 
         OauthClient oauthClient = new BeesClient(clientId,clientSecret).getOauthClient();
-        OauthToken token = oauthClient.createToken();
-        EventApi eventApi = new EventApi(token.accessToken,"http://services-dev.apps.cloudbees.com/");
+        TokenRequest tr = new TokenRequest();
+                tr.withAccountName("cloudbees").withGenerateRequestToken(true)
+                        .withScope(new URL("http://localhost:9090/vivek/websolr-play-sample"),
+                                new Capability("https://types.cloudbees.com/resource/read"))
+                        .withScope("https://api.cloudbees.com/services/api/events/write")
+                        .withScope("https://api.cloudbees.com/services/api/events/read");
+
+        // Generated token also carries refreshToken, store somewhere safe and next time around
+        // call oauthClient.exchangeToAccessToken(refreshToken) to get new accessToken
+        OauthToken token = oauthClient.createToken(tr);
+
+        EventApi eventApi = new EventApi(token.accessToken);
 
 Publish Event
 -------------
 The Target URL must identify the cloud resource. 
 
         // Publish event events for an application on RUN@cloud as cloud resource
-        Event.Target target = new Event.Target("https://services-platform.cloudbees.com/api/services/resources/cb-app/acme/helloworld",
+        Event.Target target = new Event.Target(new URL("https://services-platform.cloudbees.com/api/services/resources/cb-app/acme/helloworld"),
                                                "https://types.cloudbees.com/resource/services-platform/resource");
 
         Event eventReq = new Event(target, "info");
@@ -70,7 +81,10 @@ The Target URL must identify the cloud resource.
 Here we are using a different Target constructor providing service, account name and resourceId, everything else remains the same.
 
         // Publish event events for an application on RUN@cloud
-        Event.Target target = new Event.Target("acme", "cb-app", "helloworld");
+        Event.Target target = new Event.Target.SpTargetBuilder("cb-app").
+                resourceId("helloworld","cloudbees").
+                resourceType("application").
+                build();
 
  * HTTP Request
  
