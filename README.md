@@ -21,12 +21,21 @@ Using the code
 ==============
 To use this library, add the following dependency to your Maven POM:
 
+* Stable Release
     <dependency>
      <groupId>com.cloudbees.event</groupId>
      <artifactId>cloudbees-event-api</artifactId>
-     <version>1.1-SNAPSHOT</version>
+     <version>1.1</version>
     </dependency>
 
+
+* Snapshot
+
+    <dependency>
+     <groupId>com.cloudbees.event</groupId>
+     <artifactId>cloudbees-event-api</artifactId>
+     <version>1.2-SNAPSHOT</version>
+    </dependency>
 
 Authentication
 --------------
