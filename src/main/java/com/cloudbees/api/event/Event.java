@@ -2,7 +2,6 @@ package com.cloudbees.api.event;
 
 
 import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.UriBuilder;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -108,17 +108,11 @@ public class Event {
      * related to a SP specific subscription or resource events.
      */
     public static class Target {
-        @JsonIgnore
-        private String account;
-
-        @JsonIgnore
-        private String service;
-
         /**
          * URL of the resource
          */
         @JsonProperty("url")
-        private String url;
+        private URL url;
 
         /**
          * Resource types
@@ -128,40 +122,115 @@ public class Event {
 
 
         @JsonCreator
-        public Target(@JsonProperty("url") String url, @JsonProperty("types") String... types) {
+        public Target(@JsonProperty("url") URL url, @JsonProperty("types") String... types) {
             this.url = url;
             this.types = Arrays.asList(types);
         }
 
         /**
-         * Call this constructor if the event is targeted to Services Platform subscription or resource
-         * <p/>
-         * For testing you can set SP_URL Java system property or environment variable to Services Platform
-         * URL of DEV.
-         *
-         * @param account    Account or domain name
-         * @param service    Name of the service, for example, dev-at-cloud or cb-app or cb-db
-         * @param resourceId resource identifier
+         * This is a convenience Target build to construct Target for Services Platform resources.
          */
-        public Target(@Nonnull String account, @Nonnull String service, @Nullable String resourceId) {
+        public static class SpTargetBuilder {
+            private  String account;
+            private  final String service;
+            private  String resourceId;
+            private   String resourceType;
 
-            String spUrl = System.getProperty("SP_URL");
-            if (spUrl == null) {
-                spUrl = System.getenv("SP_URL");
+            /**
+             *
+             * @param service Name of the service, for example, dev-at-cloud or cb-app or cb-db
+             */
+            public SpTargetBuilder(@Nonnull String service) {
+                this.service = service;
             }
 
-            if (spUrl == null || (!spUrl.equals(EventApi.SP_DEV_BASE_URL) && !spUrl.equals(EventApi.SP_PORD_BASE_URL))) {
-                spUrl = EventApi.SP_PORD_BASE_URL;
+            /**
+             * If resourceId is given account also must be present.
+             *
+             * @param resourceId resourceId resource identifier
+             * @param account Account or domain name
+             */
+            public SpTargetBuilder resourceId(@Nonnull String resourceId, @Nonnull String account){
+                this.resourceId = resourceId;
+                this.account = account;
+                return this;
             }
 
-            UriBuilder uriBuilder = UriBuilder.fromUri(spUrl).path("api/services/");
-            if (resourceId != null) {
-                uriBuilder.path("resources").path(service).path(account).path(resourceId);
-            } else {
-                uriBuilder.path("subscriptions").path(service).path(account);
+            /**
+             * Resource type of given resourceId. For example, 'application', 'database' etc.
+             */
+            public SpTargetBuilder resourceType(@Nonnull String resourceType){
+                this.resourceType = resourceType;
+                return this;
             }
 
-            this.url = uriBuilder.build().toString();
+            /**
+             * @param account Account or domain name
+             */
+            public SpTargetBuilder account(@Nonnull String account){
+                this.account = account;
+                return this;
+            }
+
+            /**
+             * Build Event Target using specific eventEndpoint. Use this method if you know which Services Platform endpoint
+             * you plan to call.
+             *
+             * Possible values are
+             * <br/>
+             *  https://services-dev.apps.cloudbees.com - For development <br/>
+             *  https://services-platform.cloudbees.com - For production
+             *
+             * @param eventEndpoint Can be null, defaults to production endpoint
+             *
+             * @throws EventApiException
+             *
+             */
+            public Target build(@Nullable String eventEndpoint) throws EventApiException {
+                if(eventEndpoint == null){
+                    eventEndpoint = EventApi.SP_PORD_BASE_URL;
+                }
+
+                if(service == null){
+                    throw new EventApiException("service must be non-null");
+                }
+
+                if(resourceId != null && account == null){
+                    throw new EventApiException("account is needed if resourceId is given");
+                }
+                UriBuilder uriBuilder = UriBuilder.fromUri(eventEndpoint).path("api/services/");
+                String type;
+                if (resourceId != null) {
+                    uriBuilder.path("resources").path(service).path(account).path(resourceId);
+                    type = "https://types.cloudbees.com/resource/services-platform/resource";
+                    if(resourceType != null){
+                        type += "/" + resourceType;
+                    }
+                } else {
+                    uriBuilder.path("subscriptions").path(service);
+                    if(account!=null){
+                        uriBuilder.path(account);
+                    }
+                    type = "https://types.cloudbees.com/resource/services-platform/service/"+service;
+                }
+
+                try {
+                    return new Target(uriBuilder.build().toURL(), type);
+                } catch (MalformedURLException e) {
+                    String error = "Failed to construct Target url: "+e.getMessage();
+                    logger.error(error);
+                    throw new EventApiException(error, e);
+                }
+            }
+
+            /**
+             * Construct Target using default Event endpoint
+             *
+             * @throws EventApiException
+             */
+            public Target build() throws EventApiException {
+                return this.build(null);
+            }
         }
     }
 

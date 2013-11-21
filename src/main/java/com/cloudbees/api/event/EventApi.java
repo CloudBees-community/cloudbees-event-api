@@ -38,18 +38,17 @@ public class EventApi {
 
     private static final Logger logger = LoggerFactory.getLogger(EventApi.class);
     static final String SP_PORD_BASE_URL = "https://services-platform.cloudbees.com/";
-    static final String SP_DEV_BASE_URL = "http://services-dev.apps.cloudbees.com/";
     private static final String EVENT_API_PATH = "/api/events/";
 
     private final String accessToken;
     public final String eventApiUrl;
-    private final String spUrl;
+    private final String eventEndpoint;
     private final RestClient restClient = new RestClient();
 
     /**
      * Create an EventApi instance using a valid Oauth access_token with following scopes:
      *
-     * https://api.cloudbees.com/services/api/events/read - For reeading/querying events
+     * https://api.cloudbees.com/services/api/events/read - For reading/querying events
      * https://api.cloudbees.com/services/api/events/write - For publishing events
      *
      * @param accessToken valid access token with
@@ -62,21 +61,19 @@ public class EventApi {
 
 
     /**
-     * Constructs EventApi with provided spUrl values.
+     * Constructs EventApi with provided event endpoint values.
      *
      * Possible values are
+     *
      *  https://services-dev.apps.cloudbees.com - For development
-     *  https://services-platform.cloudbees.com - For development
+     *  https://services-platform.cloudbees.com - For production
      *
      * @throws IOException
      */
-    public EventApi(@Nonnull String accessToken, @Nonnull String spUrl) throws EventApiException {
+    public EventApi(@Nonnull String accessToken, @Nonnull String eventEndpoint) throws EventApiException {
         this.accessToken = accessToken;
-        if(!validateSpUrl(spUrl)){
-            throw new EventApiException(String.format("Invalid Services Platform URL: %s. Possible values are: %s or %s", spUrl, SP_DEV_BASE_URL, SP_PORD_BASE_URL));
-        }
-        this.spUrl = spUrl;
-        this.eventApiUrl =UriBuilder.fromUri(spUrl).path(EVENT_API_PATH).build().toString();
+        this.eventEndpoint = eventEndpoint;
+        this.eventApiUrl =UriBuilder.fromUri(this.eventEndpoint).path(EVENT_API_PATH).build().toString();
     }
 
 
@@ -100,6 +97,11 @@ public class EventApi {
         WebResource wr = restClient.client.resource(UriBuilder.fromPath(eventApiUrl).build());
         wr.addFilter(new BearerTokenFilter(accessToken));
         ClientResponse cr = wr.type(MediaType.APPLICATION_JSON_TYPE).post(ClientResponse.class, eventRequest);
+        if(cr.getStatus() >= 300){
+            String error = String.format("EvenApi.publish() returned HTTP status: %s, message: %s",cr.getStatus(), cr.toString());
+            logger.error(error);
+            throw new EventApiException(error);
+        }
         return cr.getLocation().toString();
     }
 
@@ -116,6 +118,11 @@ public class EventApi {
         try{
             wr.header("Authorization", createBearerAuthorizationHeader(accessToken));
             ClientResponse cr = wr.get(ClientResponse.class);
+            if(cr.getStatus() >= 300){
+                String error = String.format("EvenApi.readEvent() returned HTTP status: %s, message: %s",cr.getStatus(), cr.toString());
+                logger.error(error);
+                throw new EventApiException(error);
+            }
             return restClient.objectMapper.readValue(cr.getEntityInputStream(), Event.class);
         }catch(IOException e){
             throw new EventApiException(e.getMessage(), e);
@@ -136,6 +143,12 @@ public class EventApi {
         try{
             wr.header("Authorization", createBearerAuthorizationHeader(accessToken));
             ClientResponse cr = wr.get(ClientResponse.class);
+            if(cr.getStatus() >= 300){
+                String error = String.format("EvenApi.query() returned HTTP status: %s, message: %s",cr.getStatus(), cr.toString());
+                logger.error(error);
+                throw new EventApiException(error);
+            }
+
             return restClient.objectMapper.readValue(cr.getEntityInputStream(), new TypeReference<List<Event>>() {});
         }catch(IOException e){
             throw new EventApiException(e.getMessage(), e);
@@ -155,10 +168,12 @@ public class EventApi {
             throw new EventApiException(e.getMessage(), e);
         }
         ClientResponse cr = wr.delete(ClientResponse.class);
-        logger.info("Delete status: "+cr.getStatus());
-        if(cr.getStatus() != 200){
-            logger.info(cr.toString());
+        if(cr.getStatus() >= 300){
+            String error = String.format("EvenApi.delete() returned HTTP status: %s, message: %s",cr.getStatus(), cr.toString());
+            logger.error(error);
+            throw new EventApiException(error);
         }
+
         return cr.getStatus() == 200;
     }
 
@@ -196,15 +211,6 @@ public class EventApi {
 
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper;
-    }
-
-    private boolean validateSpUrl(String spUrl){
-        if(spUrl != null){
-            if(spUrl.charAt(spUrl.length()-1) != '/'){
-                spUrl += "/";
-            }
-        }
-        return spUrl != null && (spUrl.equals(SP_PORD_BASE_URL) || spUrl.equals(SP_DEV_BASE_URL));
     }
 
     private class  BearerTokenFilter extends ClientFilter{
